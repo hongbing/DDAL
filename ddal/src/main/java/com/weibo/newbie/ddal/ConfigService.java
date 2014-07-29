@@ -8,29 +8,54 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.weibo.newbie.common.ShardingAlgorithm;
+import com.weibo.newbie.model.ShardingServer;
 
 /**
  * @author hongbing
- *
+ *	负责对数据库的DNS查找
  */
 public class ConfigService {
 	
 	ShardingAlgorithm sAlgorithm = new ShardingAlgorithm();
 	
-	public List<String> getShardingInfoFromFile() throws IOException {
+	/**
+	 * 
+	 * getShardingInfoFromFile：从文件中获取到shardingServer的IP地址以及multi DB的端口号
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	public List<ShardingServer> getShardingInfoFromFile() throws IOException {
 		String s = null;
-		List<String> list = new ArrayList<String>();
+		List<ShardingServer> list = new ArrayList<ShardingServer>();
 		File file = new File("shardingConfig");
 		if (file.isFile() && file != null) {
 			BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+			Map<String, List<String>> map = new HashMap<String, List<String>>();
 			while( (s = bufferedReader.readLine()) != null) {
-				list.add(s);
+				ShardingServer ss = new ShardingServer();
+				ss.setShardingServerName(s.split(":")[0]);
+				map.put(s.split(":")[1], Arrays.asList(s.split(":")[2]));
+				ss.setMultiDBMap(map);
+				list.add(ss);
 			}
 		}
 		return list;
+	}
+	
+	public ShardingServer getShardingServerByShardingNo(Integer no) {
+		try {
+			return this.getShardingInfoFromFile().get(no);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 
