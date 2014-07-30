@@ -13,6 +13,8 @@ import java.util.List;
  */
 public interface StatusDao {
 	
-	public List<String> queryUserStatus(String uid, Integer page, Integer size);
+	public List<String> queryUserStatusFromSlave(String uid, Integer page, Integer size);
+	
+	public Boolean InsertUserStatus2Master(String uid, String id); 
 	
 }

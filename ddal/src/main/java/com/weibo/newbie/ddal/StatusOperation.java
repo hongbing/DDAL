@@ -30,7 +30,7 @@ public class StatusOperation {
 		if (null == uid || uid.trim().equals("")) {
 			return null;
 		}			
-		return statusDao.queryUserStatus(uid, Constants.DEFAULT_PAGE, Constants.DEFAULT_SIZE);
+		return statusDao.queryUserStatusFromSlave(uid, Constants.DEFAULT_PAGE, Constants.DEFAULT_SIZE);
 	}
 	
 	/**
@@ -41,7 +41,7 @@ public class StatusOperation {
 	 * @return
 	 */
 	public List<String> getUserStatus(String uid, Integer page, Integer size) {
-		return statusDao.queryUserStatus(uid, page, size);
+		return statusDao.queryUserStatusFromSlave(uid, page, size);
 	}
 	
 	/**
@@ -54,7 +54,7 @@ public class StatusOperation {
 	public Map<String, List<String>> getUsersStatus(String [] uids,Integer page, Integer size) {
 		Map<String, List<String>> usersStatusMap = new HashMap<String, List<String>>();
 		for (String uid : uids) {
-			usersStatusMap.put(uid, statusDao.queryUserStatus(uid, page, size));
+			usersStatusMap.put(uid, statusDao.queryUserStatusFromSlave(uid, page, size));
 		}
 		return usersStatusMap;
 	}
