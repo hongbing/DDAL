@@ -4,7 +4,6 @@
  */
 package com.weibo.newbie.DAO;
 
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -28,21 +27,25 @@ public class DBHelper {
 	public static final String password = "root";
 	
 	
-	public Connection conn = null;
-	public PreparedStatement pst = null;
+	private Connection conn = null;
+	private PreparedStatement pst = null;
 	
-	public DBHelper(String sql, String ip, String port, String DBName) {
-		try {
-			Class.forName(name);
-			conn = DriverManager.getConnection(String.format(JDBC_URL_PATTERN, ip, port, DBName), user, password);
-			pst = conn.prepareStatement(sql);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+	public DBHelper() {
+		
 	}
 	
+	public PreparedStatement getStatement(String sql, String ip, String port) {
+		try {
+			Class.forName(name);
+			conn = DriverManager.getConnection(String.format(JDBC_URL_PATTERN, ip, port), user, password);
+			pst = conn.prepareStatement(sql);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return pst;
+	}
 	
 	public void close() {
 		try {

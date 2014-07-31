@@ -15,7 +15,7 @@ import com.weibo.newbie.common.Constants;
  * @author hongbing
  *
  */
-public class StatusOperation {
+public class StatusService {
 
 	ConfigService configService = new ConfigService();
 	StatusDao statusDao = new StatusDaoImpl();
@@ -59,5 +59,14 @@ public class StatusOperation {
 		return usersStatusMap;
 	}
 
+	/**
+	 * store status 
+	 * @param uid
+	 * @param sid
+	 * @return
+	 */
+	public Boolean storeStatus(String uid, String sid) {
+		return statusDao.InsertUserStatus2Master(uid, sid);
+	}
 
 }

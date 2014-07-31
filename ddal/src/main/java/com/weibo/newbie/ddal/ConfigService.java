@@ -58,6 +58,24 @@ public class ConfigService {
 		return null;
 	}
 	
+	
+	//通过用户ID计算当前微博应该存储在哪个db中
+	public String getStatusStoreLoc(String uid) {
+		Integer shardingNo = sAlgorithm.computeShardByUserId(uid);
+		ShardingServer shardingServer = getShardingServerByShardingNo(shardingNo);
+		String hostname = null;
+		List<String> ports = null;
+		Map<String, List<String>> map = new HashMap<String, List<String>>();
+		map = shardingServer.getMultiDBMap();
+		if (map != null && map.size() > 0) {
+			hostname = (String) map.keySet().toArray()[0];
+			ports = map.get(hostname);
+		}
+		/**
+		 * 到底使用哪个db，算法怎么设计的还需重新考虑,一个端口会对应一个db
+		 */
+		return hostname + ":" + ports.get(0);
+	}
 
 	public static void main(String[] args) throws IOException {
 		ConfigService configService = new ConfigService();
