@@ -36,12 +36,13 @@ public class StatusDaoImpl implements StatusDao{
 		String sql1 = "select * from %s where uid = '%s' order by %s desc;";
 //		String sql1 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH + " where uid = " 
 //				+ "'" + uid + "'" + " order by " + Constants.COLUMN_NAME_OF_MONTH + " desc;";
-		String dBIPAndPortStr = configService.getStatusStoreLoc(uid);
-		String ip = dBIPAndPortStr.split(":")[0];
-		String port = dBIPAndPortStr.split(":")[1];
+		String dBStr = configService.getStatusStoreLoc(uid);
+		String ip = dBStr.split(":")[0];
+		String port = dBStr.split(":")[1];
+		String dbName = dBStr.split(":")[2];
 //		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(sql1, ip, port);
 		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql1, Constants.USER_STATUS_COUNT_PERMONTH, uid, Constants.COLUMN_NAME_OF_MONTH), ip, port);
+				String.format(sql1, Constants.USER_STATUS_COUNT_PERMONTH, uid, Constants.COLUMN_NAME_OF_MONTH), ip, port,dbName);
 		try {
 			resultSet = pst1.executeQuery();
 			Integer sum = 0;
@@ -72,7 +73,7 @@ public class StatusDaoImpl implements StatusDao{
 //		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(
 //				sql2, ip, port);
 		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql2, Constants.USER_STATUS, Constants.COLUMN_NAME_OF_MONTH, s), ip, port);
+				String.format(sql2, Constants.USER_STATUS, Constants.COLUMN_NAME_OF_MONTH, s), ip, port, dbName);
 		try {
 			resultSet = pst2.executeQuery();
 			while(resultSet.next()) {
@@ -95,13 +96,13 @@ public class StatusDaoImpl implements StatusDao{
 	 * @return
 	 */
 	public Boolean InsertUserStatus2Master(String uid, String sid) {
-		String dBIPAndPortStr = configService.getStatusStoreLoc(uid);
-		String ip = dBIPAndPortStr.split(":")[0];
-		String port = dBIPAndPortStr.split(":")[1];
-		
+		String dBStr = configService.getStatusStoreLoc(uid);
+		String ip = dBStr.split(":")[0];
+		String port = dBStr.split(":")[1];
+		String dbName = dBStr.split(":")[2];
 		String sql1 = "insert into " + Constants.USER_STATUS + " values("
 				+ uid + ", " + sid + ");";
-		PreparedStatement pst = (PreparedStatement) dbHelper.getStatement(sql1, ip, port);
+		PreparedStatement pst = (PreparedStatement) dbHelper.getStatement(sql1, ip, port, dbName);
 		try {
 			Boolean b1 = pst.execute();
 			if (false == b1) {
@@ -117,7 +118,7 @@ public class StatusDaoImpl implements StatusDao{
 		String sql2 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH 
 				+ " where uid = " + "'" + uid + "'" + " and " 
 				+ Constants.COLUMN_NAME_OF_MONTH + " = " + currentMonth + ";";
-		pst = (PreparedStatement) dbHelper.getStatement(sql2, ip, port);
+		pst = (PreparedStatement) dbHelper.getStatement(sql2, ip, port, dbName);
 		Integer currentCount = 0;
 		try {
 			ResultSet resultSet = pst.executeQuery();
@@ -129,7 +130,7 @@ public class StatusDaoImpl implements StatusDao{
 		String sql3 = "update " + Constants.USER_STATUS_COUNT_PERMONTH + " set "
 				+ Constants.COLUMN_NAME_OF_COUNT + " = " + currentCount;
 		try {
-			dbHelper.getStatement(sql3, ip, port).executeUpdate();
+			dbHelper.getStatement(sql3, ip, port, dbName).executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {

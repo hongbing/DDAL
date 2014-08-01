@@ -37,12 +37,11 @@ public class ConfigService {
 		File file = new File("shardingConfig");
 		if (file.isFile() && file != null) {
 			BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
-			Map<String, List<String>> map = new HashMap<String, List<String>>();
+			Map<String, Integer> map = new HashMap<String, Integer>();
 			while( (s = bufferedReader.readLine()) != null) {
 				ShardingServer ss = new ShardingServer();
-				ss.setShardingServerName(s.split(":")[0]);
-				map.put(s.split(":")[1], Arrays.asList(s.split(":")[2]));
-				ss.setMultiDBMap(map);
+				map.put(s.split(":")[0], Integer.valueOf(s.split(":")[1]));
+				ss.setDBMap(map);
 				list.add(ss);
 			}
 		}
@@ -64,17 +63,17 @@ public class ConfigService {
 		Integer shardingNo = sAlgorithm.computeShardByUserId(uid);
 		ShardingServer shardingServer = getShardingServerByShardingNo(shardingNo);
 		String hostname = null;
-		List<String> ports = null;
-		Map<String, List<String>> map = new HashMap<String, List<String>>();
-		map = shardingServer.getMultiDBMap();
+		Integer port = null;
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		map = shardingServer.getDBMap();
 		if (map != null && map.size() > 0) {
 			hostname = (String) map.keySet().toArray()[0];
-			ports = map.get(hostname);
+			port = map.get(hostname);
 		}
 		/**
-		 * 到底使用哪个db，算法怎么设计的还需重新考虑,一个端口会对应一个db
+		 * 到底使用哪个db
 		 */
-		return hostname + ":" + ports.get(0);
+		return hostname + " : " + port + " : db" + Integer.valueOf(uid) % 4;
 	}
 
 	public static void main(String[] args) throws IOException {

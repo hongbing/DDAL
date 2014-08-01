@@ -34,10 +34,10 @@ public class DBHelper {
 		
 	}
 	
-	public PreparedStatement getStatement(String sql, String ip, String port) {
+	public PreparedStatement getStatement(String sql, String ip, String port, String dbName) {
 		try {
 			Class.forName(name);
-			conn = DriverManager.getConnection(String.format(JDBC_URL_PATTERN, ip, port), user, password);
+			conn = DriverManager.getConnection(String.format(JDBC_URL_PATTERN, ip, port,dbName), user, password);
 			pst = conn.prepareStatement(sql);
 		} catch (SQLException e) {
 			e.printStackTrace();

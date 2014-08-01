@@ -24,7 +24,7 @@ public class ShardingServer {
 	 * string -->IP Address
 	 * List<String> --> DB port
 	 */
-	private Map<String, List<String>> multiDBMap;
+	private Map<String,Integer> dbMap;
 	
 	public String getShardingServerName() {
 		return shardingServerName;
@@ -32,11 +32,11 @@ public class ShardingServer {
 	public void setShardingServerName(String shardingServerName) {
 		this.shardingServerName = shardingServerName;
 	}
-	public Map<String, List<String>> getMultiDBMap() {
-		return multiDBMap;
+	public Map<String, Integer> getDBMap() {
+		return dbMap;
 	}
-	public void setMultiDBMap(Map<String, List<String>> multiDBMap) {
-		this.multiDBMap = multiDBMap;
+	public void setDBMap(Map<String, Integer> dbMap) {
+		this.dbMap = dbMap;
 	}
 	
 	
