@@ -33,12 +33,15 @@ public class StatusDaoImpl implements StatusDao{
 		
 		List<String> months= new ArrayList<String>();
 		ResultSet resultSet = null;
-		String sql1 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH + " where uid = " 
-				+ "'" + uid + "'" + " order by " + Constants.COLUMN_NAME_OF_MONTH + " desc;";
+		String sql1 = "select * from %s where uid = '%s' order by %s desc;";
+//		String sql1 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH + " where uid = " 
+//				+ "'" + uid + "'" + " order by " + Constants.COLUMN_NAME_OF_MONTH + " desc;";
 		String dBIPAndPortStr = configService.getStatusStoreLoc(uid);
 		String ip = dBIPAndPortStr.split(":")[0];
 		String port = dBIPAndPortStr.split(":")[1];
-		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(sql1, ip, port);
+//		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(sql1, ip, port);
+		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(
+				String.format(sql1, Constants.USER_STATUS_COUNT_PERMONTH, uid, Constants.COLUMN_NAME_OF_MONTH), ip, port);
 		try {
 			resultSet = pst1.executeQuery();
 			Integer sum = 0;
@@ -61,12 +64,15 @@ public class StatusDaoImpl implements StatusDao{
 			s = s + months.get(i) + (i == months.size() -1 ? " " : ", ");
 		}
 		//查询user_status表
-		String sql2 = "select * from " + Constants.USER_STATUS 
-				+ " where " + Constants.COLUMN_NAME_OF_MONTH 
-				+ " in (" + s + ");";
-		
+//		String sql2 = "select * from " + Constants.USER_STATUS 
+//				+ " where " + Constants.COLUMN_NAME_OF_MONTH 
+//				+ " in (" + s + ");";
+		String sql2 = "select * from %s where %s in ( %s );";
 		//获取用户微博发表的微博ID
-		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(sql2, ip, port);
+//		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(
+//				sql2, ip, port);
+		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(
+				String.format(sql2, Constants.USER_STATUS, Constants.COLUMN_NAME_OF_MONTH, s), ip, port);
 		try {
 			resultSet = pst2.executeQuery();
 			while(resultSet.next()) {
