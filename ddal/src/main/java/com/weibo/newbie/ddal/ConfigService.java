@@ -63,10 +63,12 @@ public class ConfigService {
 	public String getStatusStoreLoc(String uid, DBOperation op) {
 		Integer shardingNo = sAlgorithm.computeShardByUserId(uid);
 		if (shardingNo == null || shardingNo.intValue() < 0) {
+			System.err.println("No available sharding no");
 			return null;
 		}
 		ShardingServer shardingServer = getShardingServerByShardingNo(shardingNo);
 		if (shardingServer == null) {
+			System.err.println("can't find the sharding server");
 			return null;
 		}
 		String hostname = null;
@@ -75,20 +77,22 @@ public class ConfigService {
 		map = shardingServer.getDBMap();
 		if (map != null && map.size() > 0) {
 			if (op.equals(DBOperation.WRITE)) {
-				hostname = (String) map.keySet().toArray()[0];
+				hostname = (String) map.keySet().toArray()[6];
+				System.out.println(hostname);
 			} else {
-				hostname = (String) map.keySet().toArray()[1];
+				hostname = (String) map.keySet().toArray()[5];
 			}
 			port = map.get(hostname);
 		}
 		/**
 		 * 到底使用哪个db,还需要重新设计
 		 */
-		return hostname + " : " + port + " : db" + Integer.valueOf(uid) % 4;
+		return hostname + ":" + port + ":db" + Integer.valueOf(uid) % 4;
 	}
 
 	public static void main(String[] args) throws IOException {
 		ConfigService configService = new ConfigService();
-		configService.getShardingInfoFromFile();
+		String s = configService.getStatusStoreLoc("12453", DBOperation.WRITE);
+		System.out.println(s);
 	}
 }

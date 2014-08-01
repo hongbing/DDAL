@@ -23,8 +23,8 @@ public class DBHelper {
 
 	public static final String JDBC_URL_PATTERN = "jdbc:mysql://%s:%s/%s";
 	public static final String name = "com.mysql.jdbc.Driver";
-	public static final String user = "root";
-	public static final String password = "root";
+	public static final String user = "ddal_user";
+	public static final String password = "123456";
 	
 	
 	private Connection conn = null;
@@ -38,7 +38,11 @@ public class DBHelper {
 		try {
 			Class.forName(name);
 			conn = DriverManager.getConnection(String.format(JDBC_URL_PATTERN, ip, port,dbName), user, password);
-			pst = conn.prepareStatement(sql);
+			if (conn != null) {
+				pst = conn.prepareStatement(sql);
+			} else {
+				return null;
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -49,8 +53,12 @@ public class DBHelper {
 	
 	public void close() {
 		try {
-			this.conn.close();
-			this.pst.close();
+			if (conn != null) {
+				conn.close();
+			}
+			if (pst != null) {
+				pst.close();
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

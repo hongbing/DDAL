@@ -31,59 +31,54 @@ public class StatusDaoImpl implements StatusDao{
 		Integer end_status = start_status + size;
 		//通过二级索引查询请求的用户的微博所发表的月份,通过月份避免全表查询
 		//表名：USER_STATUS_COUNT_PERMONTH
-		
 		List<String> months= new ArrayList<String>();
 		ResultSet resultSet = null;
 		String sql1 = "select * from %s where uid = '%s' order by %s desc;";
-//		String sql1 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH + " where uid = " 
-//				+ "'" + uid + "'" + " order by " + Constants.COLUMN_NAME_OF_MONTH + " desc;";
 		String dBStr = configService.getStatusStoreLoc(uid, DBOperation.READ);
 		String ip = dBStr.split(":")[0];
 		String port = dBStr.split(":")[1];
 		String dbName = dBStr.split(":")[2];
-//		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(sql1, ip, port);
 		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(
 				String.format(sql1, Constants.USER_STATUS_COUNT_PERMONTH, uid, Constants.COLUMN_NAME_OF_MONTH), ip, port,dbName);
 		try {
 			resultSet = pst1.executeQuery();
 			Integer sum = 0;
-			while(resultSet.next()) {
-				sum += Integer.parseInt(resultSet.getString(Constants.COLUMN_NAME_OF_COUNT));
-				months.add(resultSet.getString(Constants.COLUMN_NAME_OF_MONTH));
-				if (sum >= end_status) {
-					break;
+			if (resultSet != null) {
+				while(resultSet.next()) {
+					sum += Integer.parseInt(resultSet.getString(Constants.COLUMN_NAME_OF_COUNT));
+					months.add(resultSet.getString(Constants.COLUMN_NAME_OF_MONTH));
+					if (sum >= end_status) {
+						break;
+					}
+					if (months.size() >= 12 || months.size() <= 0) {
+						break;
+					}
 				}
-				if (months.size() >= 12) {
-					break;
-				}
+			} else {// no month results
+				return null;
 			}
+			
 			resultSet = null;
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		String s = "";
+		//查询user status表
 		for (int i = 0; i < months.size(); i++) {
-			s = s + months.get(i) + (i == months.size() -1 ? " " : ", ");
-		}
-		//查询user_status表
-//		String sql2 = "select * from " + Constants.USER_STATUS 
-//				+ " where " + Constants.COLUMN_NAME_OF_MONTH 
-//				+ " in (" + s + ");";
-		String sql2 = "select * from %s where %s in ( %s );";
-		//获取用户微博发表的微博ID
-//		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(
-//				sql2, ip, port);
-		PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql2, Constants.USER_STATUS, Constants.COLUMN_NAME_OF_MONTH, s), ip, port, dbName);
-		try {
-			resultSet = pst2.executeQuery();
-			while(resultSet.next()) {
-				userStatusIDList.add(resultSet.getString(Constants.COLUMN_NAME_OF_STATUS_ID));
+			String sql2 = "select * from "+ Constants.PREFIX_OF_USER_STATUS_TABLE + months.get(i)
+					+ " where uid =" + uid + ";";
+			System.out.println(sql2 + "on " + dbName);
+			//获取用户微博发表的微博ID
+			PreparedStatement pst2 = (PreparedStatement) dbHelper.getStatement(sql2, ip, port, dbName);
+			try {
+				resultSet = pst2.executeQuery();
+				while(resultSet.next()) {
+					userStatusIDList.add(resultSet.getString(Constants.COLUMN_NAME_OF_STATUS_ID));
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
-			dbHelper.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
 		}
+		dbHelper.close();
 		return userStatusIDList;
 	}
 	
@@ -104,37 +99,34 @@ public class StatusDaoImpl implements StatusDao{
 		String ip = dBStr.split(":")[0];
 		String port = dBStr.split(":")[1];
 		String dbName = dBStr.split(":")[2];
+		//根据月份判断应该将微博写入到哪张表中，通过二级索引表查看是否存在当月的用户微博表。
+		
 		String sql1 = "insert into %s (%s, %s) values('%s', '%s');";
 		PreparedStatement pst = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql1, Constants.USER_STATUS, Constants.COLUMN_NAME_OF_USER_ID,
-						Constants.COLUMN_NAME_OF_STATUS_ID, uid, sid), ip, port, dbName);
+				String.format(sql1, Constants.PREFIX_OF_USER_STATUS_TABLE + DateUtil.getCurrentYearAndMonth(),
+						Constants.COLUMN_NAME_OF_USER_ID, Constants.COLUMN_NAME_OF_STATUS_ID, uid, sid), 
+						ip, port, dbName);
 		try {
-			Boolean b1 = pst.execute();
-			if (false == b1) {
-				return false;
+			System.out.println(String.format(sql1, Constants.PREFIX_OF_USER_STATUS_TABLE + DateUtil.getCurrentYearAndMonth(),
+					Constants.COLUMN_NAME_OF_USER_ID, Constants.COLUMN_NAME_OF_STATUS_ID, uid, sid) + "on " + dbName);
+			if (pst == null) {
+				return null;
 			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			dbHelper.close();
-		}
-		String currentMonth = DateUtil.getCurrentMonth();
-		//更新二级索引
-		String sql2 = "select * from  %s where uid = '%s' and month = '%s';";
-		pst = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql2, Constants.USER_STATUS_COUNT_PERMONTH, uid, currentMonth), ip, port, dbName);
-		Integer currentCount = 0;
-		try {
-			ResultSet resultSet = pst.executeQuery();
-			currentCount = Integer.valueOf(resultSet.getString(Constants.COLUMN_NAME_OF_COUNT));
-			currentCount++;
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		String sql3 = "update %s set count = '%s' where uid = '%s';";
-		try {
-			dbHelper.getStatement(String.format(sql3, Constants.USER_STATUS_COUNT_PERMONTH,
-					currentCount, uid), ip, port, dbName).executeUpdate();
+			pst.execute();
+			//更新二级索引,update在没有记录是什么也不做，replace在没有记录是插入，有记录是更新
+			//
+			//
+			String sql3 = "replace into %s set count = count + 1 where uid = '%s';";
+			//
+			//
+			//
+			pst = (PreparedStatement) dbHelper.getStatement(String.format(sql3, Constants.USER_STATUS_COUNT_PERMONTH,
+					uid), ip, port, dbName);
+			if (pst == null) {
+				return null;
+			}
+			pst.executeUpdate();
+			System.out.println(String.format(sql3, Constants.USER_STATUS_COUNT_PERMONTH,uid));
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -144,5 +136,15 @@ public class StatusDaoImpl implements StatusDao{
 		return true;
 	}
 	
+	
+//	public Boolean createCurrentMonthTable() {
+//		String month = DateUtil.getCurrentYearAndMonth();
+//		String sql = "create table " + Constants.PREFIX_OF_USER_STATUS_TABLE + month + "("
+//				+ "id int primary key not null auto_increment," 
+//				+ "uid int not null, "
+//				+ "sid bigint" 
+//				+ ");";
+//		return false;
+//	}
 	
 }

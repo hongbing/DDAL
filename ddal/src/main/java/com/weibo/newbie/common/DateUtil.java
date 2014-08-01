@@ -8,7 +8,7 @@ public class DateUtil {
 	 * get month like:201407
 	 * @return
 	 */
-	public static String getCurrentMonth() {
+	public static String getCurrentYearAndMonth() {
 		Calendar cal = Calendar.getInstance();
 		Integer year = cal.get(Calendar.YEAR);
 		Integer month = cal.get(Calendar.MONTH) + 1;
@@ -17,6 +17,6 @@ public class DateUtil {
 	
 	
 	public static void main(String[] args) {
-		System.out.println(DateUtil.getCurrentMonth());
+		System.out.println(DateUtil.getCurrentYearAndMonth());
 	}
 }
