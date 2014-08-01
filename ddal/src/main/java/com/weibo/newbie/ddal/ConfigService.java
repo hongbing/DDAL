@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.weibo.newbie.common.DBOperation;
 import com.weibo.newbie.common.ShardingAlgorithm;
 import com.weibo.newbie.model.ShardingServer;
 
@@ -59,19 +60,29 @@ public class ConfigService {
 	
 	
 	//通过用户ID计算当前微博应该存储在哪个db中
-	public String getStatusStoreLoc(String uid) {
+	public String getStatusStoreLoc(String uid, DBOperation op) {
 		Integer shardingNo = sAlgorithm.computeShardByUserId(uid);
+		if (shardingNo == null || shardingNo.intValue() < 0) {
+			return null;
+		}
 		ShardingServer shardingServer = getShardingServerByShardingNo(shardingNo);
+		if (shardingServer == null) {
+			return null;
+		}
 		String hostname = null;
 		Integer port = null;
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		map = shardingServer.getDBMap();
 		if (map != null && map.size() > 0) {
-			hostname = (String) map.keySet().toArray()[0];
+			if (op.equals(DBOperation.WRITE)) {
+				hostname = (String) map.keySet().toArray()[0];
+			} else {
+				hostname = (String) map.keySet().toArray()[1];
+			}
 			port = map.get(hostname);
 		}
 		/**
-		 * 到底使用哪个db
+		 * 到底使用哪个db,还需要重新设计
 		 */
 		return hostname + " : " + port + " : db" + Integer.valueOf(uid) % 4;
 	}

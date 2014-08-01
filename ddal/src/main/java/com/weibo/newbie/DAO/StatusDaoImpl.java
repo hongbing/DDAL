@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.mysql.jdbc.PreparedStatement;
 import com.weibo.newbie.common.Constants;
+import com.weibo.newbie.common.DBOperation;
 import com.weibo.newbie.common.DateUtil;
 import com.weibo.newbie.common.ShardingAlgorithm;
 import com.weibo.newbie.ddal.ConfigService;
@@ -36,7 +37,7 @@ public class StatusDaoImpl implements StatusDao{
 		String sql1 = "select * from %s where uid = '%s' order by %s desc;";
 //		String sql1 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH + " where uid = " 
 //				+ "'" + uid + "'" + " order by " + Constants.COLUMN_NAME_OF_MONTH + " desc;";
-		String dBStr = configService.getStatusStoreLoc(uid);
+		String dBStr = configService.getStatusStoreLoc(uid, DBOperation.READ);
 		String ip = dBStr.split(":")[0];
 		String port = dBStr.split(":")[1];
 		String dbName = dBStr.split(":")[2];
@@ -96,13 +97,17 @@ public class StatusDaoImpl implements StatusDao{
 	 * @return
 	 */
 	public Boolean InsertUserStatus2Master(String uid, String sid) {
-		String dBStr = configService.getStatusStoreLoc(uid);
+		String dBStr = configService.getStatusStoreLoc(uid, DBOperation.WRITE);
+		if (dBStr == null) {
+			return false;
+		}
 		String ip = dBStr.split(":")[0];
 		String port = dBStr.split(":")[1];
 		String dbName = dBStr.split(":")[2];
-		String sql1 = "insert into " + Constants.USER_STATUS + " values("
-				+ uid + ", " + sid + ");";
-		PreparedStatement pst = (PreparedStatement) dbHelper.getStatement(sql1, ip, port, dbName);
+		String sql1 = "insert into %s (%s, %s) values('%s', '%s');";
+		PreparedStatement pst = (PreparedStatement) dbHelper.getStatement(
+				String.format(sql1, Constants.USER_STATUS, Constants.COLUMN_NAME_OF_USER_ID,
+						Constants.COLUMN_NAME_OF_STATUS_ID, uid, sid), ip, port, dbName);
 		try {
 			Boolean b1 = pst.execute();
 			if (false == b1) {
@@ -115,10 +120,9 @@ public class StatusDaoImpl implements StatusDao{
 		}
 		String currentMonth = DateUtil.getCurrentMonth();
 		//更新二级索引
-		String sql2 = "select * from " + Constants.USER_STATUS_COUNT_PERMONTH 
-				+ " where uid = " + "'" + uid + "'" + " and " 
-				+ Constants.COLUMN_NAME_OF_MONTH + " = " + currentMonth + ";";
-		pst = (PreparedStatement) dbHelper.getStatement(sql2, ip, port, dbName);
+		String sql2 = "select * from  %s where uid = '%s' and month = '%s';";
+		pst = (PreparedStatement) dbHelper.getStatement(
+				String.format(sql2, Constants.USER_STATUS_COUNT_PERMONTH, uid, currentMonth), ip, port, dbName);
 		Integer currentCount = 0;
 		try {
 			ResultSet resultSet = pst.executeQuery();
@@ -127,10 +131,10 @@ public class StatusDaoImpl implements StatusDao{
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		String sql3 = "update " + Constants.USER_STATUS_COUNT_PERMONTH + " set "
-				+ Constants.COLUMN_NAME_OF_COUNT + " = " + currentCount;
+		String sql3 = "update %s set count = '%s' where uid = '%s';";
 		try {
-			dbHelper.getStatement(sql3, ip, port, dbName).executeUpdate();
+			dbHelper.getStatement(String.format(sql3, Constants.USER_STATUS_COUNT_PERMONTH,
+					currentCount, uid), ip, port, dbName).executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {

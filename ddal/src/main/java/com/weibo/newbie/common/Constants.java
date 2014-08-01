@@ -26,6 +26,7 @@ public class Constants {
 	public static final String COLUMN_NAME_OF_MONTH = "month";
 	
 	//USER_STATUS column name
+	public static final String COLUMN_NAME_OF_USER_ID = "uid";
 	public static final String COLUMN_NAME_OF_STATUS_ID = "sid";
 	
 	
