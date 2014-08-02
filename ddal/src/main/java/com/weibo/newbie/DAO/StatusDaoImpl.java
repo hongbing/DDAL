@@ -14,6 +14,10 @@ import com.weibo.newbie.common.DBOperation;
 import com.weibo.newbie.common.DateUtil;
 import com.weibo.newbie.common.ShardingAlgorithm;
 import com.weibo.newbie.ddal.ConfigService;
+import com.weibo.newbie.ddal.SimpleStatusIdGenerator;
+import com.weibo.newbie.ddal.StatusIdGenerator;
+import com.weibo.newbie.model.Status;
+import com.weibo.newbie.model.User;
 
 /**
  * @author hongbing
@@ -24,9 +28,10 @@ public class StatusDaoImpl implements StatusDao{
 	ConfigService configService = new ConfigService();
 	ShardingAlgorithm sAlgorithm = new ShardingAlgorithm();
 	DBHelper dbHelper = new DBHelper();
+	StatusIdGenerator statusIdGenerator = new SimpleStatusIdGenerator();
 	
-	public List<String> queryUserStatusFromSlave(String uid, Integer page, Integer size) {
-		List<String> userStatusIDList = new ArrayList<String>();
+	public List<Status> queryUserStatusFromSlave(String uid, Integer page, Integer size) {
+		List<Status> userStatusIDList = new ArrayList<Status>();
 		Integer start_status = (page - 1) * Constants.STATUS_COUNT_PERPAGE;
 		Integer end_status = start_status + size;
 		//通过二级索引查询请求的用户的微博所发表的月份,通过月份避免全表查询
@@ -39,7 +44,7 @@ public class StatusDaoImpl implements StatusDao{
 		String port = dBStr.split(":")[1];
 		String dbName = dBStr.split(":")[2];
 		PreparedStatement pst1 = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql1, Constants.USER_STATUS_COUNT_PERMONTH, uid, Constants.COLUMN_NAME_OF_MONTH), ip, port,dbName);
+				String.format(sql1, Constants.TABLE_USER_STATUS_COUNT_PERMONTH, uid, Constants.COLUMN_NAME_OF_MONTH), ip, port,dbName);
 		try {
 			resultSet = pst1.executeQuery();
 			Integer sum = 0;
@@ -72,7 +77,11 @@ public class StatusDaoImpl implements StatusDao{
 			try {
 				resultSet = pst2.executeQuery();
 				while(resultSet.next()) {
-					userStatusIDList.add(resultSet.getString(Constants.COLUMN_NAME_OF_STATUS_ID));
+					Status status = new Status();
+					status.setStatusId(resultSet.getString(Constants.COLUMN_NAME_OF_STATUS_ID));
+					status.setContent(resultSet.getString(Constants.COLUMN_NAME_OF_CONTENT));
+					status.setUser(new User(uid));
+					userStatusIDList.add(status);
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -91,7 +100,7 @@ public class StatusDaoImpl implements StatusDao{
 	 * @param id
 	 * @return
 	 */
-	public Boolean InsertUserStatus2Master(String uid, String sid) {
+	public Boolean InsertUserStatus2Master(String uid, String content) {
 		String dBStr = configService.getStatusStoreLoc(uid, DBOperation.WRITE);
 		if (dBStr == null) {
 			return false;
@@ -100,33 +109,32 @@ public class StatusDaoImpl implements StatusDao{
 		String port = dBStr.split(":")[1];
 		String dbName = dBStr.split(":")[2];
 		//根据月份判断应该将微博写入到哪张表中，通过二级索引表查看是否存在当月的用户微博表。
-		
-		String sql1 = "insert into %s (%s, %s) values('%s', '%s');";
+		String sid = statusIdGenerator.generateStatusId();
+		if (sid == null) {
+			System.out.println("generate status id failed");
+			return false;
+		}
+		String sql1 = "insert into %s (%s, %s, %s) values('%s', '%s', '%s');";
 		PreparedStatement pst = (PreparedStatement) dbHelper.getStatement(
-				String.format(sql1, Constants.PREFIX_OF_USER_STATUS_TABLE + DateUtil.getCurrentYearAndMonth(),
-						Constants.COLUMN_NAME_OF_USER_ID, Constants.COLUMN_NAME_OF_STATUS_ID, uid, sid), 
+				String.format(sql1, Constants.TABLE_USER_STATUS_4_CURRENT_MONTH, Constants.COLUMN_NAME_OF_USER_ID, 
+						Constants.COLUMN_NAME_OF_STATUS_ID, Constants.COLUMN_NAME_OF_CONTENT, uid, sid, content), 
 						ip, port, dbName);
 		try {
-			System.out.println(String.format(sql1, Constants.PREFIX_OF_USER_STATUS_TABLE + DateUtil.getCurrentYearAndMonth(),
-					Constants.COLUMN_NAME_OF_USER_ID, Constants.COLUMN_NAME_OF_STATUS_ID, uid, sid) + "on " + dbName);
+			System.out.println(String.format(sql1, Constants.TABLE_USER_STATUS_4_CURRENT_MONTH, Constants.COLUMN_NAME_OF_USER_ID, 
+					Constants.COLUMN_NAME_OF_STATUS_ID, Constants.COLUMN_NAME_OF_CONTENT, uid, sid, content) + "on " + dbName);
 			if (pst == null) {
 				return null;
 			}
 			pst.execute();
-			//更新二级索引,update在没有记录是什么也不做，replace在没有记录是插入，有记录是更新
-			//
-			//
-			String sql3 = "replace into %s set count = count + 1 where uid = '%s';";
-			//
-			//
-			//
-			pst = (PreparedStatement) dbHelper.getStatement(String.format(sql3, Constants.USER_STATUS_COUNT_PERMONTH,
-					uid), ip, port, dbName);
+			//更新二级索引表
+			String sql3 = "insert into %s set uid = %s, month = %s, count = 1 on duplicate key update count =  count + 1;";
+			pst = (PreparedStatement) dbHelper.getStatement(String.format(sql3, Constants.TABLE_USER_STATUS_COUNT_PERMONTH,
+					uid, DateUtil.getCurrentYearAndMonth()), ip, port, dbName);
 			if (pst == null) {
 				return null;
 			}
 			pst.executeUpdate();
-			System.out.println(String.format(sql3, Constants.USER_STATUS_COUNT_PERMONTH,uid));
+			System.out.println(String.format(sql3, Constants.TABLE_USER_STATUS_COUNT_PERMONTH,uid, DateUtil.getCurrentYearAndMonth()));
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {

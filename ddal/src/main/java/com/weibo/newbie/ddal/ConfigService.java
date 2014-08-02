@@ -8,11 +8,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.weibo.newbie.common.Constants;
 import com.weibo.newbie.common.DBOperation;
 import com.weibo.newbie.common.ShardingAlgorithm;
 import com.weibo.newbie.model.ShardingServer;
@@ -87,7 +87,7 @@ public class ConfigService {
 		/**
 		 * 到底使用哪个db,还需要重新设计
 		 */
-		return hostname + ":" + port + ":db" + Integer.valueOf(uid) % 4;
+		return hostname + ":" + port + ":" + Constants.PREFIX_DB + Integer.valueOf(uid) % Constants.DB_COUNT;
 	}
 
 	public static void main(String[] args) throws IOException {

@@ -6,17 +6,44 @@ package com.weibo.newbie.ddal;
 import java.util.List;
 import java.util.Map;
 
+import com.weibo.newbie.model.Status;
+
 /**
  * @author hongbing
  *
  */
 public interface StatusService {
 
-	List<String> getUserStatus(String uid);
+	/**
+	 * 以默认page和size返回用户发表的微博信息
+	 * @param uid
+	 * @return
+	 */
+	List<Status> getUserStatus(String uid);
 	
-	List<String> getUserStatus(String uid, Integer page, Integer size);
+	/**
+	 * 
+	 * @param uid
+	 * @param page
+	 * @param size
+	 * @return
+	 */
+	List<Status> getUserStatus(String uid, Integer page, Integer size);
 	
-	Map<String, List<String>> getUsersStatus(String [] uids,Integer page, Integer size);
+	/**
+	 * 
+	 * @param uids 多个用户的id
+	 * @param page
+	 * @param size
+	 * @return
+	 */
+	Map<String, List<Status>> getUsersStatus(String [] uids,Integer page, Integer size);
 	
-	Boolean storeStatus(String uid, String sid);
+	/**
+	 * 保存用户微博信息
+	 * @param uid
+	 * @param content 微博内容
+	 * @return
+	 */
+	Boolean storeStatus(String uid, String content);
 }

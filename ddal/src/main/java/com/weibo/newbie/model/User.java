@@ -22,6 +22,10 @@ public class User {
 	private String userName;
 	private List<String> status;
 	
+	public User(String userId) {
+		this.userId = userId;
+	}
+	
 	public String getUserId() {
 		return userId;
 	}
